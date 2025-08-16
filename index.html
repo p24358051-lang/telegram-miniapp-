@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Links Grid</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#111; color:#fff; margin:0; padding:20px; }
+    h1 { text-align:center; margin-bottom:20px; }
+    .controls { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+    .controls input, .controls select {
+      padding:8px; border-radius:6px; border:none; font-size:14px;
+    }
+    .grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap:15px; }
+    .card { background:#222; border-radius:10px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.5); display:flex; flex-direction:column; }
+    .card img { width:100%; height:110px; object-fit:cover; display:block; }
+    .card .title { padding:6px 10px; font-size:14px; font-weight:bold; }
+    .buttons { display:flex; }
+    .buttons button {
+      flex:1; padding:8px; border:none; cursor:pointer; font-size:13px; color:#fff;
+    }
+    .open-btn { background:#e91e63; }
+    .open-btn:hover { background:#ff4081; }
+    .share-btn { background:#03a9f4; }
+    .share-btn:hover { background:#29b6f6; }
+  </style>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <h1>SUNOVA MINI</h1>
+
+  <div class="controls">
+    <input type="text" id="search" placeholder="Search videos..." />
+    <select id="category">
+      <option value="all">All Categories</option>
+      <option value="funny">Funny</option>
+      <option value="music">Music</option>
+      <option value="adult">Adult</option>
+    </select>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <script>
+    // Telegram WebApp init
+    const tg = window.Telegram.WebApp;
+    tg.ready();   // signal Telegram that webapp is ready
+    tg.expand();  // make webapp fullscreen
+    tg.MainButton.text = "Close App";
+    tg.MainButton.onClick(() => tg.close());
+
+    // 👇 apna data array yahan customize karo
+    const ITEMS = [
+      { title: "Funny Clip", category:"funny", thumb:"https://via.placeholder.com/300x150.png?text=Funny+Clip", url:"https://example.com/funny1" },
+      { title: "Music Video", category:"music", thumb:"https://via.placeholder.com/300x150.png?text=Music+Video", url:"https://example.com/music1" },
+      { title: "Adult Sample", category:"adult", thumb:"https://via.placeholder.com/300x150.png?text=18%2B+Video", url:"https://example.com/adult1" },
+      { title: "Funny Prank", category:"funny", thumb:"https://via.placeholder.com/300x150.png?text=Prank", url:"https://example.com/funny2" },
+    ];
+
+    const grid = document.getElementById("grid");
+    const searchInput = document.getElementById("search");
+    const categorySelect = document.getElementById("category");
+
+    function renderGrid() {
+      const searchTerm = searchInput.value.toLowerCase();
+      const category = categorySelect.value;
+      grid.innerHTML = "";
+
+      ITEMS.filter(item => {
+        const matchesSearch = item.title.toLowerCase().includes(searchTerm);
+        const matchesCategory = category === "all" || item.category === category;
+        return matchesSearch && matchesCategory;
+      }).forEach(item => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <img src="${item.thumb}" alt="${item.title}">
+          <div class="title">${item.title}</div>
+          <div class="buttons">
+            <button class="open-btn">Open</button>
+            <button class="share-btn">Share</button>
+          </div>
+        `;
+        // Open button
+        card.querySelector(".open-btn").onclick = () => {
+          if (tg.openLink) {
+            tg.openLink(item.url, { try_instant_view: false });
+          } else {
+            window.open(item.url, "_blank");
+          }
+        };
+        // Share button
+        card.querySelector(".share-btn").onclick = async () => {
+          if (navigator.share) {
+            await navigator.share({ title: item.title, text: "Check this out!", url: item.url });
+          } else if (navigator.clipboard) {
+            await navigator.clipboard.writeText(item.url);
+            tg.HapticFeedback.notificationOccurred("success");
+            alert("Link copied!");
+          } else {
+            alert("Sharing not supported");
+          }
+        };
+        grid.appendChild(card);
+      });
+    }
+
+    searchInput.addEventListener("input", renderGrid);
+    categorySelect.addEventListener("change", renderGrid);
+    renderGrid(); // initial render
+  </script>
+</body>
+</html>
